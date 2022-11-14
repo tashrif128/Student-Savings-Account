@@ -1,0 +1,86 @@
+//SPDX-License-Identifier: UNLICENSED
+
+pragma solidity ^0.6.0;
+
+contract StudentSavingsAccount {
+
+    uint totalBalance = 0;
+    uint ContractStartTime;
+    
+
+    constructor() public {
+    ContractStartTime = block.timestamp;
+    }
+    
+
+    
+
+    // define Student
+    struct student{
+        string firstName;
+        string lastName;
+        uint releaseTime;
+        uint amount;  
+            
+    }
+
+    mapping(address => uint) balances;
+    mapping(address => uint) depositTimestamps;
+    
+
+
+         // This function allows user to deposit amount into this smart contract 
+    function addmoney() public payable {
+        balances[msg.sender] = msg.value;
+        totalBalance = totalBalance + msg.value;
+        
+    }
+
+
+    function getBalance(address walletAddress) public view returns(uint) {
+        uint principal = balances[walletAddress];       
+        uint timeElapsed = block.timestamp - depositTimestamps[walletAddress]; //seconds
+        return principal + uint((principal * 5 * timeElapsed) / (100 * 365 * 24 * 60 * 60)); //simple interest of 5%  per year
+    }
+
+
+    function secondyearBalance(address walletAddress) public view returns(uint) {
+        uint principal = balances[walletAddress]; 
+        uint timeElapsed = ContractStartTime - depositTimestamps[walletAddress]; //seconds
+    return principal + uint((principal * 8 * timeElapsed) / (100 * 730 * 24 * 60 * 60)); //simple interest of 8%  for 2nd year
+    } 
+
+
+
+    
+    function invest() external payable {
+        if (msg.value < 5 ether) {
+            revert();
+        }
+        balances[msg.sender] += msg.value;
+    }
+    
+    
+    //Owner can transfer 2 ether from this cotract to receipent 
+    function sendEther (address payable recipentaddress) external {
+        recipentaddress.transfer (2 ether);
+    }
+
+
+
+   function withdraw() public payable returns (bool) {
+        address payable withdrawTo = payable(msg.sender);
+        uint amountToTransfer = getBalance(msg.sender);
+        balances[msg.sender] = 0;
+        totalBalance = totalBalance - amountToTransfer;
+        (bool sent,) = withdrawTo.call{value: amountToTransfer}("");
+        require(sent, "transfer failed");
+
+        return true;
+    }
+
+    
+
+    receive() external payable {
+    }
+}
